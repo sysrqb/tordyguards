@@ -135,14 +135,15 @@ def change_state_file(config_file):
     datadir_path = config.get('Tor', 'DataDirectory')
     statestore_path = config.get('Tor', 'StateStorage')
     state_fn = config.get('Tor', 'StateFile')
-    last_bssid_fn = config.get('Network', 'LastBSSIDFilename')
+    last_ebssid_fn = config.get('Network', 'LastEBSSIDFilename')
     start_tor = config.get('Commands', 'StartTor')
     stop_tor = config.get('Commands', 'StopTor')
 
-    last_bssid_fp = last_bssid_full_path(state_path, last_bssid_fn)
-    state_fp = state_full_path(state_path, state_fn)
-    state_bssid_fp = state_bssid_full_path(state_path, state_fn, bssid)
-    state_old_fp = state_old_full_path(state_path, state_fn)
+    if not create_state_store(statestore_path):
+        logger.warn("Couldn't create State Storage (%s) . Failing." % \
+                    statestore_path)
+        resume_tor(pid)
+        return
 
     previous_bssid = last_bssid_file_exists(last_bssid_fp)
     if previous_bssid:
