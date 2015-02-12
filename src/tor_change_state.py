@@ -152,10 +152,28 @@ def change_state_file(config_file):
         resume_tor(pid)
         return
 
-    previous_bssid = last_bssid_file_exists(last_bssid_fp)
-    if previous_bssid:
-        state_bssid_previous_fp = state_bssid_full_path(
-            state_path, state_fn, previous_bssid)
+    essid, bssid = get_or_prompt_for_ebssid(essid, bssid,
+                                            statestore_path)
+
+    ebssid = essid + '.' + bssid
+    if ebssid == ".":
+        logger.warn("We've got nothing. Quiting while we're ahead.")
+        return
+
+    last_ebssid_fp = last_ebssid_full_path(statestore_path, last_ebssid_fn)
+    state_fp = state_full_path(datadir_path, state_fn)
+    state_ebssid_fp = state_ebssid_full_path(statestore_path, essid, bssid)
+    state_old_fp = state_old_full_path(statestore_path, state_fn)
+    previous_ebssid = last_ebssid_file_exists(last_ebssid_fp)
+    if previous_ebssid:
+       previous_ebssid, previous_essid, previous_bssid = \
+               get_previous_e_and_b_ssids(previous_ebssid)
+       state_ebssid_previous_fp = \
+               state_ebssid_full_path(statestore_path,
+                                      previous_essid,
+                                      previous_bssid)
+
+    if previous_ebssid:
         if file_exists(state_fp):
             if previous_ebssid != ebssid:
                 logger.info("Case 5: Known previous, current "
