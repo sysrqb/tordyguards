@@ -110,13 +110,10 @@ def main():
         "specific to the LAN/WLAN to which this device connects."))
     parser.add_argument('-f', '--config', help='tordyguards config file',
                         default=CONFIG_FILENAME)
-    parser.add_argument('connection_type', help='(wireless, ethernet)')
-    parser.add_argument('essid')
-    parser.add_argument('bssid')
+    parser.add_argument('arguments', nargs='+')
     args = parser.parse_args()
 
-    tor_change_state.change_state_file(args.bssid, config_file=args.config)
-
+    tor_change_state.change_state_file(config_file=args.config)
 
 if __name__ == "__main__":
     main()

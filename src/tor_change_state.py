@@ -54,8 +54,8 @@ def parseConfig(filename=None):
 
     return config
 
-def change_state_file(bssid, config_file=None):
-    """Change tor state file depending on the network bssid
+def change_state_file(config_file):
+    """Change tor state file depending on the network ebssid
     
     Tor ignore state file when it is a symlink,
     so this create a file to store the last bssid
@@ -92,8 +92,41 @@ def change_state_file(bssid, config_file=None):
     :type last_bssid_fn: string
     """
 
+    bssid = None
+    essid = None
+    manager = None
     config = parseConfig(config_file)
-    state_path = config.get('Tor', 'DataDirectory')
+
+    # Suspend Tor early
+    pid = 1
+    pid_fn = config.get('Tor', 'PidFile')
+    pidstr = read_file(pid_fn)
+    if not pidstr:
+        pid = int(pidstr)
+        suspend_tor(pid)
+
+    if config.get('Manager', 'Wicd') == "Yes":
+        from wicd_tor_change_state import WicdManager
+        logger.info("Using Wicd.")
+        manager = WicdManager()
+    else:
+        logger.error("Unknown Manager. Done.")
+        resume_tor(pid)
+        return
+
+    manager.parse_args()
+    logger.info("Checking if we should abort here.")
+    if not manager.should_continue():
+        logger.info("Manager decided we should not continue.")
+        resume_tor(pid)
+        return
+    logger.info("Continuing...")
+
+    essid, bssid = manager.get_ebssid()
+
+    logger.info("ESSID: %s, BSSID: %s" % (essid, bssid))
+    datadir_path = config.get('Tor', 'DataDirectory')
+    statestore_path = config.get('Tor', 'StateStorage')
     state_fn = config.get('Tor', 'StateFile')
     last_bssid_fn = config.get('Network', 'LastBSSIDFilename')
     start_tor = config.get('Commands', 'StartTor')
