@@ -104,10 +104,10 @@ def main():
         exit('ERROR: importing tor_change_state')
 
     parser = argparse.ArgumentParser(description=(
-        "This script is called before Wicd connects to a network, in order "
-        "to rotate Tor's state file, such that state files used by Tor are "
-        "always specific to the BSSID of LAN/WLAN network access point that "
-        "Wicd is about to attempt to connect to."))
+        "This script is called when the state of a network interface "
+        "changes. When this occurs, this script rotates Tor's state "
+        "file, in this way, the state files used by Tor are always "
+        "specific to the LAN/WLAN to which this device connects."))
     parser.add_argument('-f', '--config', help='tordyguards config file',
                         default=CONFIG_FILENAME)
     parser.add_argument('connection_type', help='(wireless, ethernet)')
