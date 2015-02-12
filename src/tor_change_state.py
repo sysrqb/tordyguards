@@ -26,12 +26,10 @@ try:
 except:
     import ConfigParser as configparser
 import os
-import shutil
-from subprocess import Popen
+from common import *
 from tdg_logging import *
 
 #tor_wicd_conf = os.path.join("/etc/wicd/", "tor_wicd.conf")
-
 
 def parseConfig(filename=None):
     try:
@@ -55,70 +53,6 @@ def parseConfig(filename=None):
         fh.close()
 
     return config
-
-
-def last_bssid_full_path(state_path, last_bssid_fn):
-    return os.path.join(state_path, last_bssid_fn)
-
-
-def state_full_path(state_path, state_fn):
-    return os.path.join(state_path, state_fn)
-
-
-def state_bssid_full_path(state_path, state_fn, bssid):
-    bssid_file = state_fn + "." + bssid.replace(":", "_")
-    return os.path.join(state_path, bssid_file)
-
-
-def state_old_full_path(state_path, state_fn):
-    return os.path.join(state_path, state_fn + ".old")
-
-
-def file_exists(state_full_path):
-    logger.info("checking if %s exists" % (state_full_path,))
-    return os.path.isfile(state_full_path)
-
-
-def last_bssid_file_exists(last_bssid_fp):
-    logger.info("checking if %s exists" % (last_bssid_fp,))
-    if os.path.isfile(last_bssid_fp):
-        fd = open(last_bssid_fp)
-        previous_bssid = fd.read().strip()
-        fd.close()
-        logger.info("previous bssid was %s" % (previous_bssid,))
-        return previous_bssid
-    return False
-
-
-def mv_file(from_file, to_file):
-    # os.system("mv %s %s" % (from_file, to_file))
-    shutil.move(from_file, to_file)
-    logger.info("mv %s %s" % (from_file, to_file))
-
-
-def cp_file(from_file, to_file):
-    # when copying state.bssid to state, use tor user
-    #os.system("sudo -u %s -H cp %s %s" % (TOR_USER, from_file, to_file))
-    #shutil.copy2(from_file, to_file)
-    p = Popen(['cp', '-p', '--preserve', from_file, to_file])
-    p.wait()
-    logger.info("cp %s %s" % (from_file, to_file))
-
-
-def update_last_bssid_file(last_bssid_fp, bssid):
-    """Update the file where the last wireless bssid is stored
-
-    :param bssid: bssid
-    :type bssid: string
-    :param last_bssid_fp: full path where the last bssid is stored
-    :type last_bssid_fp: string
-    """
-
-    fd = open(last_bssid_fp, 'w')
-    fd.write(bssid)
-    fd.close()
-    logger.info("updated %s with bssid %s" % (last_bssid_fp, bssid))
-
 
 def change_state_file(bssid, config_file=None):
     """Change tor state file depending on the network bssid
