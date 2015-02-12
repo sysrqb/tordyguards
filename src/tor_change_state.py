@@ -63,33 +63,40 @@ def change_state_file(config_file):
     
     There are 3 main variables to take into account:
     * The default tor state file
-    * The last bssid we connected to
-    * The current bssid we are connecting to
+    * The last essid/bssid we connected to
+    * The current essid/bssid we are connecting to
+
+    The essid/bssid combination is referred to as ebssid.
     
     Possible cases with those variables:
-    * state file does not exit, no last bssid =>
-      action: update last_bssid file with current bssid
-    * state file does not exit, last bssid, last bssid != current bssid =>
-      action: mv state.bssid_previous state;
-              update last_bssid file with current bssid
-    * state file does not exit, last bssid, last bssid == current bssid =>
-      action: cp state state.bssid_previous
-    * state file exits, no last bssid =>
-      action: mv state state.old, update last bssid file
-    * state file exits, last bssid, last bssid != current bssid =>
-      action: mv state state.bssid_previous; cp state.bssid state,
-              update last_bssid file with current bssid
-    * state file exits, last bssid, last bssid == current bssid =>
-      action: cp state state.bssid
+    * case 1: if state file does not exist and the previous ebssid is unknown =>
+      action: update previous ebssid file with current ebssid.
+    * case 2: if state file does not exist, the previous ebssid is known,
+         and ${previous_ebssid} != ${ebssid} =>
+      action: mv state.${ebssid_previous} state;
+              update previous_ebssid file with current ebssid
+    * case 3: state file does not exit, last ebssid, last ebssid == current ebssid =>
+      action: None
+    * case 4: state file exits, no last ebssid =>
+      action: mv state state.old, update last ebssid file
+    * case 5: state file exits, last ebssid, last ebssid != current ebssid =>
+      action: mv state state.ebssid_previous; cp state.ebssid state,
+              update last_ebssid file with current ebssid
+    * case 6: state file exits, last ebssid, last ebssid == current ebssid =>
+      action: cp state state.ebssid
     
+    :param essid: essid
+    :type essid: string
     :param bssid: bssid
     :type bssid: string
+    :param ebssid: ebssid
+    :type ebssid: string
     :param state_path: parent path to the tor default state file
     :type state_path: string
     :param state_fn: file name of the tor default state file
     :type state_fn: string
-    :param last_bssid_fn: file name where the last bssid is stored
-    :type last_bssid_fn: string
+    :param last_ebssid_fn: file name where the last bssid is stored
+    :type last_ebssid_fn: string
     """
 
     bssid = None
@@ -150,40 +157,56 @@ def change_state_file(config_file):
         state_bssid_previous_fp = state_bssid_full_path(
             state_path, state_fn, previous_bssid)
         if file_exists(state_fp):
-            if previous_bssid != bssid:
+            if previous_ebssid != ebssid:
+                logger.info("Case 5: Known previous, current "
+                            "state, different network")
                 # before using state file, stop tor
-                logger.info("stopping tor")
-                os.system(stop_tor)
-                mv_file(state_fp, state_bssid_previous_fp)
-                if file_exists(state_bssid_fp):
-                    cp_file(state_bssid_fp, state_fp)
+                resume_tor(pid)
+                stop_tor_process(stop_tor)
+                mv_file(state_fp, state_ebssid_previous_fp)
+                if file_exists(state_ebssid_fp):
+                    cp_file(state_ebssid_fp, state_fp)
                 # else: no state.bssid_previous
                 # current state will be created by tor
-                update_last_bssid_file(last_bssid_fp, bssid)
+                update_last_ebssid_file(last_ebssid_fp, ebssid)
             else:
-                # else: previous_bssid == bssid
-                # no need to cp state to state.bssid, nor to update last_bssid
-                # but update state.bssid with last state
+                logger.info("Case 6: Known previous, current "
+                            "state, same network")
+                # else: previous_ebssid == ebssid
+                # no need to cp state to state.${ebssid}, nor to update
+                # last_ebssid but update state.${ebssid} with last state
                 # don't stop tor to don't loose the circuits
-                cp_file(state_fp, state_bssid_fp)
+                cp_file(state_fp, state_ebssid_fp)
+                resume_tor(pid)
         else:
             # else: no state file
-            if previous_bssid != bssid:
-                if file_exists(state_bssid_previous_fp):
-                    logger.info("stopping tor") 
-                    os.system(stop_tor) 
-                    mv_file(state_bssid_previous_fp, state_fp)
-                # else: no state.last_bssid file
+            if previous_ebssid != ebssid:
+                logger.info("Case 2: Known previous, no current "
+                            "state.")
+                if file_exists(state_ebssid_previous_fp):
+                    resume_tor(pid)
+                    stop_tor_process(stop_tor)
+                    mv_file(state_ebssid_previous_fp, state_fp)
+                # else: no state.${last_ebssid} file
                 # current state will be created by tor
-                update_last_bssid_file(last_bssid_fp, bssid)
-            # else: previous_bssid == bssid
-            # no need to mv state, no need to update last_bssid
+                update_last_ebssid_file(last_ebssid_fp, ebssid)
+            else:
+                #previous_ebssid == ebssid
+                # no need to mv state, no need to update last_ebssid
+                logger.info("Case 3: Known previous, current "
+                            "state network matches new network.")
+                resume_tor(pid)
     else:
-        # else: no last_bssid file
+        # else: no last_ebssid file
+        resume_tor(pid)
+        stop_tor_process(stop_tor)
         if file_exists(state_fp):
+            logger.info("Case 4: Unknown previous, current "
+                        "state, assuming different network")
             mv_file(state_fp, state_old_fp)
-        update_last_bssid_file(last_bssid_fp, bssid)
+        else:
+            logger.info("Case 1: Unknown previous, no current state.")
+        update_last_ebssid_file(last_ebssid_fp, ebssid)
 
     # start tor again (if it wasn't stop it, it won't do anything)
-    logger.info("starting tor")
-    os.system(start_tor)
+    start_tor_process(start_tor)
