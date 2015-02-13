@@ -123,11 +123,14 @@ def change_state_file(config_file):
             pid = int(pidstr)
             suspend_tor(pid)
 
-    if config.get('Manager', 'Wicd') == "Yes":
+    using_wicd = get_config_option(config, 'Manager', 'Wicd', False)
+    using_nm = \
+        get_config_option(config, 'Manager', 'NetworkManager', False)
+    if using_wicd and using_wicd == "Yes":
         from wicd_tor_change_state import WicdManager
         logger.info("Using Wicd.")
         manager = WicdManager()
-    elif config.get('Manager', 'NetworkManager') == "Yes":
+    elif using_nm and using_nm == "Yes":
         from nm_tor_change_state import NMManager
         logger.info("Using NetworkManager.")
         manager = NMManager()
