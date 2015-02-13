@@ -108,7 +108,7 @@ def change_state_file(config_file):
 
     # Suspend Tor early
     pid = -1
-    pid_fn = get_config_option(config, 'Tor', 'PidFile', False)
+    pid_fn = get_any_config_option(config, 'Tor', 'PidFile', False)
     if not pid_fn:
         # Although unlikely, it's possible we won't suspend tor fast
         # enough in any case, but there isn't much we can do about that.
@@ -123,19 +123,19 @@ def change_state_file(config_file):
             pid = int(pidstr)
             suspend_tor(pid)
 
-    using_wicd = get_config_option(config, 'Manager', 'Wicd', False)
+    using_wicd = get_bool_config_option(config, 'Manager', 'Wicd', False)
     using_nm = \
-        get_config_option(config, 'Manager', 'NetworkManager', False)
-    if using_wicd and using_wicd == "Yes":
+        get_bool_config_option(config, 'Manager', 'NetworkManager', False)
+    if using_wicd:
         from wicd_tor_change_state import WicdManager
         logger.info("Using Wicd.")
         manager = WicdManager()
-    elif using_nm and using_nm == "Yes":
+    elif using_nm:
         from nm_tor_change_state import NMManager
         logger.info("Using NetworkManager.")
         manager = NMManager()
     else:
-        logger.error("Unknown Manager. Done.")
+        logger.warn("Unknown Manager. Done.")
         resume_tor(pid)
         return
 

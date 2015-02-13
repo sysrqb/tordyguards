@@ -264,10 +264,16 @@ def read_file(fn):
         return False
     return content
 
-def get_config_option(config, section, option, fatal):
+def get_any_config_option(config, section, option, fatal):
+    return get_config_option(config, config.get, section, option, fatal)
+
+def get_bool_config_option(config, section, option, fatal):
+    return get_config_option(config, config.getboolean, section, option, fatal)
+
+def get_config_option(config, opttype, section, option, fatal):
     value = None
     try:
-        value = config.get(section, option)
+        value = opttype(section, option)
     except configparser.NoSectionError as e:
         msg = "Could not find section '%s' in config. Looking for " \
               "'%s' in it." % (section, option)
