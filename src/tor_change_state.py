@@ -107,7 +107,7 @@ def change_state_file(config_file):
     limited_user, can_drop_privs = should_switch_user(config)
 
     # Suspend Tor early
-    pid = 1
+    pid = -1
     pid_fn = get_config_option(config, 'Tor', 'PidFile', False)
     if not pid_fn:
         # Although unlikely, it's possible we won't suspend tor fast

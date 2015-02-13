@@ -243,10 +243,14 @@ def start_tor_process(start_tor):
     os.system(start_tor)
 
 def suspend_tor(pid):
+    if pid == -1:
+        return
     logger.info("suspending tor (%d)", pid)
     os.kill(pid, signal.SIGSTOP)
 
 def resume_tor(pid):
+    if pid == -1:
+        return
     logger.info("resuming tor (%d)", pid)
     os.kill(pid, signal.SIGCONT)
 
