@@ -104,6 +104,8 @@ def change_state_file(config_file):
     manager = None
     config = parseConfig(config_file)
 
+    limited_user, can_drop_privs = should_switch_user(config)
+
     # Suspend Tor early
     pid = 1
     pid_fn = config.get('Tor', 'PidFile')

@@ -1,5 +1,10 @@
+try:
+    import configparser
+except:
+    import ConfigParser as configparser
 import base64
 import os
+import pwd
 import shutil
 import signal
 from subprocess import Popen, PIPE, STDOUT
@@ -254,3 +259,53 @@ def read_file(fn):
         logger.warn("Failed while opening '%s': %s", fn, e)
         return False
     return content
+
+def get_config_option(config, section, option, fatal):
+    value = None
+    try:
+        value = config.get(section, option)
+    except configparser.NoSectionError as e:
+        msg = "Could not find section '%s' in config. Looking for " \
+              "'%s' in it." % (section, option)
+        if fatal:
+            logger.warn("%s This is a fatal error. Please correct.",
+                         msg)
+        else:
+            logger.info("%s", msg)
+    except configparser.NoOptionError as e:
+        msg = "Could not find '%s' in section '%s'." % (option, section)
+        if fatal:
+            logger.warn("%s This is a fatal error. Please correct.",
+                         msg)
+        else:
+            logger.info("%s", msg)
+    return value
+
+def should_switch_user(config):
+    limited_user = None
+    can_drop_privs = False
+
+    # TODO uid is a bad indicator, we should check better
+    if os.getuid() != 0:
+        logger.warn("This script must be run as root (or with the "
+                    "necessary capabilities). Operations may fail.")
+
+    try:
+        limited_user = config.get('System', 'User')
+
+        try:
+            if pwd.getpwnam(limited_user) is not None:
+                can_drop_privs = True
+        except KeyError:
+            logger.warn("User '%s' does not exist. Cannot switch " \
+                        "to it." % limited_user)
+    except configparser.NoSectionError as e:
+        logger.warn("No less-privileged user specified in config file. " \
+                    "Please add a '[System]' section with the 'User' " \
+                    "option specifying the username.")
+    except configparser.NoOptionError as e:
+        logger.warn("No less-privileged user specified in config file. " \
+                    "Please add the 'User' option to the '[System]' " \
+                    "section specifying the username.")
+
+    return limited_user, can_drop_privs
