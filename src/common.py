@@ -238,11 +238,11 @@ def start_tor_process(start_tor):
     os.system(start_tor)
 
 def suspend_tor(pid):
-    logger.info("suspending tor")
+    logger.info("suspending tor (%d)", pid)
     os.kill(pid, signal.SIGSTOP)
 
 def resume_tor(pid):
-    logger.info("resuming tor")
+    logger.info("resuming tor (%d)", pid)
     os.kill(pid, signal.SIGCONT)
 
 def read_file(fn):

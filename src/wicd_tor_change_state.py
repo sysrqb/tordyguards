@@ -12,14 +12,14 @@ class WicdManager(ConnectionManager):
     def __init__(self):
         ConnectionManager.__init__(self)
 
-    def parse_args(self):
+    def parse_args(self, pid):
         import argparse
         parser = argparse.ArgumentParser(description=(
             "This script is called before Wicd connects to a network, "
             "in order to rotate Tor's state file, such that state "
             "files used by Tor are always specific to the BSSID of "
             "LAN/WLAN network access point that Wicd is about to "
-            "attempt to connect to."))
+            "attempt to connect to.%s" %  resume_tor(pid)))
         parser.add_argument('-f', '--config',
                             help='tordyguards config file')
         parser.add_argument('connection_type',

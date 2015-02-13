@@ -21,14 +21,14 @@ class NMManager(ConnectionManager):
         except:
             pass
 
-    def parse_args(self):
+    def parse_args(self, pid):
         import argparse
         parser = argparse.ArgumentParser(description=(
             "This script is called after NetworkManager connects to a "
             "network, the script then rotates Tor's state file, such "
             "that state files used by Tor are always specific to the "
             "ESSID/BSSID of LAN/WLAN network access point that to "
-            "which NetworkManager connected."))
+            "which NetworkManager connected.%s" % resume_tor(pid)))
         parser.add_argument('-f', '--config',
                             help='tordyguards config file')
         parser.add_argument('interface')

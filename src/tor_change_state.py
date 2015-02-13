@@ -125,7 +125,7 @@ def change_state_file(config_file):
         resume_tor(pid)
         return
 
-    manager.parse_args()
+    manager.parse_args(pid)
     logger.info("Getting devices, if needed.")
     if manager.need_devices():
         manager.set_devices(init_devices_lists())

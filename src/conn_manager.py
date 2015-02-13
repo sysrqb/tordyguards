@@ -1,6 +1,6 @@
 
 class ConnectionManager(object):
-    def parse_args(self):
+    def parse_args(self, pid):
         pass
     def get_bssid(self):
         pass
