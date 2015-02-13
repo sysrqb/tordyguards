@@ -108,11 +108,20 @@ def change_state_file(config_file):
 
     # Suspend Tor early
     pid = 1
-    pid_fn = config.get('Tor', 'PidFile')
-    pidstr = read_file(pid_fn)
-    if not pidstr:
-        pid = int(pidstr)
-        suspend_tor(pid)
+    pid_fn = get_config_option(config, 'Tor', 'PidFile', False)
+    if not pid_fn:
+        # Although unlikely, it's possible we won't suspend tor fast
+        # enough in any case, but there isn't much we can do about that.
+        # Blocking all non-dhcp packets until Tor is running in the
+        # correct state is probably a good idea.
+        logger.warn("No PidFile specified in config. Not able to " \
+                    "suspend Tor while determining what changed. " \
+                    "It's possible something may leak.")
+    else:
+        pidstr = read_file(pid_fn)
+        if pidstr not in (False, None):
+            pid = int(pidstr)
+            suspend_tor(pid)
 
     if config.get('Manager', 'Wicd') == "Yes":
         from wicd_tor_change_state import WicdManager
