@@ -127,17 +127,16 @@ def change_state_file(config_file):
     using_nm = \
         get_bool_config_option(config, 'Manager', 'NetworkManager', False)
     if using_wicd:
-        from wicd_tor_change_state import WicdManager
+        from wicd_tor_change_state import WicdManager as Manager
         logger.info("Using Wicd.")
-        manager = WicdManager()
     elif using_nm:
-        from nm_tor_change_state import NMManager
+        from nm_tor_change_state import NMManager as Manager
         logger.info("Using NetworkManager.")
-        manager = NMManager()
     else:
         logger.warn("Unknown Manager. Done.")
         resume_tor(pid)
         return
+    manager = Manager()
 
     manager.parse_args(pid)
     logger.info("Getting devices, if needed.")
