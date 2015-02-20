@@ -107,9 +107,9 @@ def change_state_file(config_file):
     limited_user, can_drop_privs = should_switch_user(config)
 
     # Suspend Tor early
-    pid = -1
-    pid_fn = get_any_config_option(config, 'Tor', 'PidFile', False)
-    if not pid_fn:
+    tor_pid = -1
+    tor_pid_fn = get_any_config_option(config, 'Tor', 'PidFile', False)
+    if not tor_pid_fn:
         # Although unlikely, it's possible we won't suspend tor fast
         # enough in any case, but there isn't much we can do about that.
         # Blocking all non-dhcp packets until Tor is running in the
@@ -118,10 +118,10 @@ def change_state_file(config_file):
                     "suspend Tor while determining what changed. " \
                     "It's possible something may leak.")
     else:
-        pidstr = read_file(pid_fn)
-        if pidstr not in (False, None):
-            pid = int(pidstr)
-            suspend_tor(pid)
+        tor_pidstr = read_file(tor_pid_fn)
+        if tor_pidstr not in (False, None):
+            tor_pid = int(tor_pidstr)
+            suspend_tor(tor_pid)
 
     using_wicd = get_bool_config_option(config, 'Manager', 'Wicd', False)
     using_nm = \
@@ -134,18 +134,18 @@ def change_state_file(config_file):
         logger.info("Using NetworkManager.")
     else:
         logger.warn("Unknown Manager. Done.")
-        resume_tor(pid)
+        resume_tor(tor_pid)
         return
     manager = Manager()
 
-    manager.parse_args(pid)
+    manager.parse_args(tor_pid)
     logger.info("Getting devices, if needed.")
     if manager.need_devices():
         manager.set_devices(init_devices_lists())
     logger.info("Checking if we should abort here.")
     if not manager.should_continue():
         logger.info("Manager decided we should not continue.")
-        resume_tor(pid)
+        resume_tor(tor_pid)
         return
     logger.info("Continuing...")
 
@@ -162,7 +162,7 @@ def change_state_file(config_file):
     if not create_state_store(statestore_path):
         logger.warn("Couldn't create State Storage (%s) . Failing." % \
                     statestore_path)
-        resume_tor(pid)
+        resume_tor(tor_pid)
         return
 
     essid, bssid = get_or_prompt_for_ebssid(essid, bssid,
@@ -192,7 +192,7 @@ def change_state_file(config_file):
                 logger.info("Case 5: Known previous, current "
                             "state, different network")
                 # before using state file, stop tor
-                resume_tor(pid)
+                resume_tor(tor_pid)
                 stop_tor_process(stop_tor)
                 mv_file(state_fp, state_ebssid_previous_fp)
                 if file_exists(state_ebssid_fp):
@@ -208,14 +208,14 @@ def change_state_file(config_file):
                 # last_ebssid but update state.${ebssid} with last state
                 # don't stop tor to don't loose the circuits
                 cp_file(state_fp, state_ebssid_fp)
-                resume_tor(pid)
+                resume_tor(tor_pid)
         else:
             # else: no state file
             if previous_ebssid != ebssid:
                 logger.info("Case 2: Known previous, no current "
                             "state.")
                 if file_exists(state_ebssid_previous_fp):
-                    resume_tor(pid)
+                    resume_tor(tor_pid)
                     stop_tor_process(stop_tor)
                     mv_file(state_ebssid_previous_fp, state_fp)
                 # else: no state.${last_ebssid} file
@@ -226,10 +226,10 @@ def change_state_file(config_file):
                 # no need to mv state, no need to update last_ebssid
                 logger.info("Case 3: Known previous, current "
                             "state network matches new network.")
-                resume_tor(pid)
+                resume_tor(tor_pid)
     else:
         # else: no last_ebssid file
-        resume_tor(pid)
+        resume_tor(tor_pid)
         stop_tor_process(stop_tor)
         if file_exists(state_fp):
             logger.info("Case 4: Unknown previous, current "
