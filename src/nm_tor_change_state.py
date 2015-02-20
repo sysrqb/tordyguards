@@ -24,6 +24,13 @@ class NMManager(ConnectionManager):
         except:
             pass
 
+    def print_help_wrapper(self, parser, pid):
+        def print_usage(self, file=None):
+            resume_tor(pid)
+            parser.print_usage2(file)
+        parser.print_usage2 = parser.print_usage
+        return print_usage
+
     def parse_args(self, pid):
         import argparse
         parser = argparse.ArgumentParser(description=(
@@ -31,13 +38,13 @@ class NMManager(ConnectionManager):
             "network, the script then rotates Tor's state file, such "
             "that state files used by Tor are always specific to the "
             "ESSID/BSSID of LAN/WLAN network access point that to "
-            "which NetworkManager connected.%s" % resume_tor(pid)))
+            "which NetworkManager connected."))
         parser.add_argument('-f', '--config',
                             help='tordyguards config file')
         parser.add_argument('interface')
         parser.add_argument('status')
+        parser.print_usage = self.print_help_wrapper(parser, pid)
         args = parser.parse_args()
-
         self.interface_ = args.interface
         self.status_ = args.status
         logger.info("Called with: '%s' '%s'" % (args.interface, args.status))
