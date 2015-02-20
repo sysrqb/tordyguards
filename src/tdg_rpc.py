@@ -157,7 +157,16 @@ def handle_request(request):
             request.error, request.result, request.result_string = \
                     VALID_RPC[request.method](param[0], param[1])
             return request
-        elif request.nparam > 2:
+        elif request.nparam == 3:
+            param = request.params
+            logger.info("Calling %s(%s, %s, %s)" % \
+                        (VALID_RPC[request.method], param[0], param[1],
+                         param[2]))
+            request.error, request.result, request.result_string = \
+                    VALID_RPC[request.method](param[0], param[1],
+                                              param[2])
+            return request
+        elif request.nparam > 3:
             logger.info("Received request with too many parameters")
             request.result = False
             request.result_string = "Too many parameters specified"

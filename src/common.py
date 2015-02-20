@@ -132,9 +132,12 @@ def rpc_get_list_of_known_networks(path):
     return error, errno, errstr
 
 def mv_file_(from_file, to_file):
-    # os.system("mv %s %s" % (from_file, to_file))
-    shutil.move(from_file, to_file)
-    logger.info("mv %s %s" % (from_file, to_file))
+    args = ['mv', '-b', '-T', from_file, to_file]
+    p = Popen(args, stdout=PIPE, stderr=STDOUT)
+    ret = p.wait()
+    stdout, stderr = p.communicate()
+    logger.info("%s" % ' '.join(args))
+    return ret, stdout
 
 def rpc_mv_file(from_file, to_file):
     error = False
@@ -142,28 +145,39 @@ def rpc_mv_file(from_file, to_file):
     errno = 0
     res = False
     try:
-        mv_file_(from_file, to_file)
+        res, errstr = mv_file_(from_file, to_file)
     except (IOError, OSError) as e:
         error = True
         errstr = "%s: '%s'" % (e.strerror, e.filename)
         errno = e.errno
-    if res:
+    if res == 0:
         return False, True, None
     return error, errno, errstr
 
-def cp_file_(from_file, to_file):
-    #TODO Figure out what is going on here
+def cp_file_(from_file, to_file, user):
     # when copying state.bssid to state, use tor user
-    #os.system("sudo -u %s -H cp %s %s" % (TOR_USER, from_file, to_file))
-    #shutil.copy2(from_file, to_file)
-    p = Popen(['cp', '-p', '--preserve', from_file, to_file])
-    p.wait() # Me
-    logger.info("cp %s %s" % (from_file, to_file))
+    args = ['install', '-b', '-g', user, '-m', '0600', '-o', user,
+            '-p', '-T', from_file, to_file]
+    p = Popen(args, stdout=PIPE, stderr=STDOUT)
+    ret = p.wait()
+    stdout, stderr = p.communicate()
+    logger.info("%s" % ' '.join(args))
+    return ret, stdout
 
-def rpc_cp_file(from_file, to_file):
-    #TODO Error handling
-    cp_file_(from_file, to_file)
-    return False, True, None
+def rpc_cp_file(from_file, to_file, user):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        res, errstr = cp_file_(from_file, to_file, user)
+    except (IOError, OSError) as e:
+        error = True
+        errstr = "%s: '%s'" % (e.strerror, e.filename)
+        errno = e.errno
+    if res == 0:
+        return False, True, None
+    return error, errno, errstr
 
 def update_last_ebssid_file_(last_ebssid_fp, ebssid):
     """Update the file where the last wireless bssid is stored

@@ -74,9 +74,11 @@ def mv_file(from_file, to_file):
         logger.info("Calling move_file")
         mv_file_(from_file, to_file)
 
-def cp_file(from_file, to_file):
+def cp_file(from_file, to_file, user=None):
+    if not user:
+        user = os.getlogin()
     if privsep:
-        rwp = RunWithPrivs('copy_file', 2, (from_file, to_file,))
+        rwp = RunWithPrivs('copy_file', 3, (from_file, to_file, user,))
         logger.info("Requesting copy_file")
         rwp.execute(write_fd)
         rwp = rwp.result(read_fd)
@@ -89,7 +91,7 @@ def cp_file(from_file, to_file):
             return rwp.result
     else:
         logger.info("Calling copy_file")
-        cp_file_(from_file, to_file)
+        cp_file_(from_file, to_file, user)
 
 def start_tor_process(start_tor):
     if privsep:

@@ -188,6 +188,7 @@ def change_state_file(config_file):
     datadir_path = config.get('Tor', 'DataDirectory')
     statestore_path = config.get('Tor', 'StateStorage')
     state_fn = config.get('Tor', 'StateFile')
+    tor_user = config.get('Tor', 'TorUser')
     last_ebssid_fn = config.get('Network', 'LastEBSSIDFilename')
     start_tor = config.get('Commands', 'StartTor')
     stop_tor = config.get('Commands', 'StopTor')
@@ -229,7 +230,7 @@ def change_state_file(config_file):
                 stop_tor_process(stop_tor)
                 mv_file(state_fp, state_ebssid_previous_fp)
                 if file_exists(state_ebssid_fp):
-                    cp_file(state_ebssid_fp, state_fp)
+                    cp_file(state_ebssid_fp, state_fp, tor_user)
                 # else: no state.bssid_previous
                 # current state will be created by tor
                 update_last_ebssid_file(last_ebssid_fp, ebssid)
@@ -240,7 +241,7 @@ def change_state_file(config_file):
                 # no need to cp state to state.${ebssid}, nor to update
                 # last_ebssid but update state.${ebssid} with last state
                 # don't stop tor to don't loose the circuits
-                cp_file(state_fp, state_ebssid_fp)
+                cp_file(state_fp, state_ebssid_fp, tor_user)
                 resume_tor(tor_pid)
         else:
             # else: no state file
