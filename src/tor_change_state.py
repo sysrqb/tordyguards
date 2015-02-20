@@ -168,6 +168,7 @@ def change_state_file(config_file):
             sys.exit(0)
         rpc_wrap.privsep = True
 
+        logger.info("Dropped to User: %d" % os.getuid())
         logger.info("Child read: %d, Parent write: %d", crd, pwd)
         logger.info("Parent read: %d, Child write: %d", prd, cwd)
 
