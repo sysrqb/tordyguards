@@ -107,6 +107,7 @@ def change_state_file(config_file):
     bssid = None
     essid = None
     manager = None
+    cr = cw = pr = pw = None
     config = parseConfig(config_file)
 
     limited_user, can_drop_privs = should_switch_user(config)
@@ -142,6 +143,38 @@ def change_state_file(config_file):
         resume_tor(tor_pid)
         return
     manager = Manager()
+
+    if can_drop_privs and limited_user:
+        crd, pwd = os.pipe()
+        prd, cwd = os.pipe()
+        cstdin, pstdout = os.pipe()
+        child_pid = os.fork()
+        if child_pid == 0:
+            os.dup2(1, pstdout)
+            uid = limited_user.pw_uid
+            os.close(pwd)
+            os.close(prd)
+            os.setresuid(uid, uid, uid)
+            ppid = os.getppid()
+            cr = os.fdopen(crd)
+            cw = os.fdopen(cwd, 'w')
+            rpc_wrap.read_fd = cr
+            rpc_wrap.write_fd = cw
+        else:
+            os.close(crd)
+            os.close(cwd)
+            os.close(cstdin)
+            os.close(0)
+            pr = os.fdopen(prd)
+            pw = os.fdopen(pwd, 'w')
+            os.dup2(pstdout, 1)
+            os.dup2(pstdout, 2)
+            main_priv_loop(pr, pw)
+            sys.exit(0)
+        rpc_wrap.privsep = True
+
+        logger.info("Child read: %d, Parent write: %d", crd, pwd)
+        logger.info("Parent read: %d, Child write: %d", prd, cwd)
 
     manager.parse_args(tor_pid)
     logger.info("Getting devices, if needed.")
