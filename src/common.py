@@ -215,14 +215,15 @@ def should_switch_user(config):
                     "necessary capabilities). Operations may fail.")
 
     try:
-        limited_user = config.get('System', 'User')
+        username = config.get('System', 'User')
 
         try:
-            if pwd.getpwnam(limited_user) is not None:
+            limited_user = pwd.getpwnam(username)
+            if limited_user is not None:
                 can_drop_privs = True
         except KeyError:
             logger.warn("User '%s' does not exist. Cannot switch " \
-                        "to it." % limited_user)
+                        "to it." % username)
     except configparser.NoSectionError as e:
         logger.warn("No less-privileged user specified in config file. " \
                     "Please add a '[System]' section with the 'User' " \
