@@ -44,9 +44,10 @@ def init_devices_lists():
 def create_state_store(path):
     try:
         os.mkdir(path, 0600)
-    except OSError:
+    except OSError as e:
         # Exception thrown when dir exists, too
-        pass
+        if not os.path.isdir(path):
+            raise e
     return os.path.isdir(path)
 
 def last_ebssid_full_path(state_path, last_ebssid_fn):
