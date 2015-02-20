@@ -2,6 +2,8 @@ import os
 from conn_manager import ConnectionManager
 from tdg_logging import *
 from common import *
+from tdg_rpc import *
+from tdg_rpc_wrappers import *
 from tdg_ssid import *
 
 class NMManager(ConnectionManager):

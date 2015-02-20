@@ -26,8 +26,12 @@ try:
 except:
     import ConfigParser as configparser
 import os
+import sys
 from common import *
 from tdg_logging import *
+from tdg_rpc import *
+import tdg_rpc_wrappers as rpc_wrap
+from tdg_rpc_wrappers import *
 from tdg_ssid import *
 
 #tor_wicd_conf = os.path.join("/etc/wicd/", "tor_wicd.conf")

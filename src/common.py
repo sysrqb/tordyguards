@@ -41,7 +41,7 @@ def init_devices_lists():
             logger.warn("%s: not found." % devfile)
     return wireless_dev, all_dev
 
-def create_state_store(path):
+def create_state_store_(path):
     try:
         os.mkdir(path, 0600)
     except OSError as e:
@@ -49,6 +49,21 @@ def create_state_store(path):
         if not os.path.isdir(path):
             raise e
     return os.path.isdir(path)
+
+def rpc_create_state_store(path):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        res = create_state_store_(path)
+    except (IOError, OSError) as e:
+        error = True
+        errstr = "%s: '%s'" % (e.strerror, e.filename)
+        errno = e.errno
+    if res:
+        return False, res, None
+    return error, errno, errstr
 
 def last_ebssid_full_path(state_path, last_ebssid_fn):
     return os.path.join(state_path, last_ebssid_fn)
@@ -67,13 +82,23 @@ def state_old_full_path(state_path, state_fn):
     return os.path.join(state_path, state_fn + ".old")
 
 
-def file_exists(state_full_path):
+def file_exists_(state_full_path):
     logger.info("checking if %s exists" % (state_full_path,))
     return os.path.isfile(state_full_path)
 
+def rpc_file_exists(state_full_path):
+    res = file_exists_(state_full_path)
+    return False, res, None
 
+def dir_exists_(dirpath):
+    logger.info("checking if %s exists" % (dirpath,))
+    return os.path.isdir(dirpath)
 
-def get_list_of_known_networks(path):
+def rpc_dir_exists(dirpath):
+    res = dir_exists_(dirpath)
+    return False, res, None
+
+def get_list_of_known_networks_(path):
     if not os.path.isdir(path):
         logger.info("StateStore not a directory")
         return list()
@@ -91,21 +116,56 @@ def get_list_of_known_networks(path):
         networks.append((essid, bssid))
     return networks
 
-def mv_file(from_file, to_file):
+def rpc_get_list_of_known_networks(path):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        res = get_list_of_known_networks_(path)
+    except (IOError, OSError) as e:
+        error = True
+        errstr = "%s: '%s'" % (e.strerror, e.filename)
+        errno = e.errno
+    if res:
+        return False, res, None
+    return error, errno, errstr
+
+def mv_file_(from_file, to_file):
     # os.system("mv %s %s" % (from_file, to_file))
-    shutil.move(from_file, to_file) # Me
+    shutil.move(from_file, to_file)
     logger.info("mv %s %s" % (from_file, to_file))
 
-def cp_file(from_file, to_file):
+def rpc_mv_file(from_file, to_file):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        mv_file_(from_file, to_file)
+    except (IOError, OSError) as e:
+        error = True
+        errstr = "%s: '%s'" % (e.strerror, e.filename)
+        errno = e.errno
+    if res:
+        return False, True, None
+    return error, errno, errstr
+
+def cp_file_(from_file, to_file):
+    #TODO Figure out what is going on here
     # when copying state.bssid to state, use tor user
     #os.system("sudo -u %s -H cp %s %s" % (TOR_USER, from_file, to_file))
     #shutil.copy2(from_file, to_file)
-    p = Popen(['cp', '-p', '--preserve', from_file, to_file]) # Me
+    p = Popen(['cp', '-p', '--preserve', from_file, to_file])
     p.wait() # Me
     logger.info("cp %s %s" % (from_file, to_file))
 
+def rpc_cp_file(from_file, to_file):
+    #TODO Error handling
+    cp_file_(from_file, to_file)
+    return False, True, None
 
-def update_last_ebssid_file(last_ebssid_fp, ebssid):
+def update_last_ebssid_file_(last_ebssid_fp, ebssid):
     """Update the file where the last wireless bssid is stored
 
     :param ebssid: ebssid
@@ -119,9 +179,24 @@ def update_last_ebssid_file(last_ebssid_fp, ebssid):
     fd.close()
     logger.info("updated %s with ebssid %s" % (last_ebssid_fp, ebssid))
 
+def rpc_update_last_ebssid_file(last_ebssid_fp, ebssid):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        update_last_ebssid_file_(last_ebssid_fp, ebssid)
+    except (IOError, OSError) as e:
+        error = True
+        errstr = "%s: '%s'" % (e.strerror, e.filename)
+        errno = e.errno
+    if res:
+        return False, True, None
+    return error, errno, errstr
+
 def get_first_word(line):
     if not line:
-        return None 
+        return None
     words = line.split()
     return words[0]
 
@@ -148,28 +223,69 @@ def get_iwconfig():
             return iwpath
     return False
 
+def stop_tor_process_(stop_tor):
+    logger.info("stopping tor")
+    return os.system(stop_tor)
 
-def stop_tor_process(stop_tor):
-    logger.info("stopping tor") 
-    os.system(stop_tor) 
+def rpc_stop_tor_process(stop_tor):
+    res = stop_tor_process_(stop_tor)
+    if res == 0:
+        return False, True, None
+    return True, res, "Execution failed"
 
-def start_tor_process(start_tor):
+def start_tor_process_(start_tor):
     logger.info("starting tor")
-    os.system(start_tor)
+    return os.system(start_tor)
 
-def suspend_tor(pid):
+def rpc_start_tor_process(start_tor):
+    res = start_tor_process_(start_tor)
+    if res == 0:
+        return False, True, None
+    return True, res, "Execution failed"
+
+def suspend_tor_(pid):
     if pid == -1:
         return
     logger.info("suspending tor (%d)", pid)
     os.kill(pid, signal.SIGSTOP)
 
-def resume_tor(pid):
+def rpc_suspend_tor(pid):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        suspend_tor_(pid)
+    except OSError as e:
+        error = True
+        errstr = "%s" % e.strerror
+        errno = e.errno
+    if res:
+        return False, True, None
+    return error, errno, errstr
+
+def resume_tor_(pid):
     if pid == -1:
         return
     logger.info("resuming tor (%d)", pid)
     os.kill(pid, signal.SIGCONT)
 
-def read_file(fn):
+def rpc_resume_tor(pid):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        resume_tor_(pid)
+    except OSError as e:
+        error = True
+        errstr = "%s" % e.strerror
+        errno = e.errno
+    if res:
+        return False, True, None
+    return error, errno, errstr
+
+def read_file_(fn):
     content = None
     try:
         with open(fn) as fd:
@@ -178,6 +294,21 @@ def read_file(fn):
         logger.warn("Failed while opening '%s': %s", fn, e)
         return False
     return content
+
+def rpc_read_file(fn):
+    error = False
+    errstr = None
+    errno = 0
+    res = False
+    try:
+        res = read_file_(fn)
+    except OSError as e:
+        error = True
+        errstr = "%s" % e.strerror
+        errno = e.errno
+    if res:
+        return False, res, None
+    return error, errno, errstr
 
 def get_any_config_option(config, section, option, fatal):
     return get_config_option(config, config.get, section, option, fatal)
