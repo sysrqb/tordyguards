@@ -28,6 +28,7 @@ except:
 import os
 from common import *
 from tdg_logging import *
+from tdg_ssid import *
 
 #tor_wicd_conf = os.path.join("/etc/wicd/", "tor_wicd.conf")
 
