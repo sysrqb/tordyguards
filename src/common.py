@@ -2,7 +2,6 @@ try:
     import configparser
 except:
     import ConfigParser as configparser
-import base64
 import os
 import pwd
 import shutil
