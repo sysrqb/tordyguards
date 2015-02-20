@@ -142,6 +142,8 @@ def get_iwconfig():
         logger.info("No PATH set. Failing.")
         return False
     pathlist = path.split(':')
+    if '/sbin' not in pathlist:
+        pathlist.extend(['/usr/local/sbin', '/usr/sbin', '/sbin'])
     if len(pathlist) < 1:
         logger.info("PATH empty. Failing.")
         return False
