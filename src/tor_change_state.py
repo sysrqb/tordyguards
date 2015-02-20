@@ -147,10 +147,8 @@ def change_state_file(config_file):
     if can_drop_privs and limited_user:
         crd, pwd = os.pipe()
         prd, cwd = os.pipe()
-        cstdin, pstdout = os.pipe()
         child_pid = os.fork()
         if child_pid == 0:
-            os.dup2(1, pstdout)
             uid = limited_user.pw_uid
             os.close(pwd)
             os.close(prd)
@@ -163,12 +161,9 @@ def change_state_file(config_file):
         else:
             os.close(crd)
             os.close(cwd)
-            os.close(cstdin)
             os.close(0)
             pr = os.fdopen(prd)
             pw = os.fdopen(pwd, 'w')
-            os.dup2(pstdout, 1)
-            os.dup2(pstdout, 2)
             main_priv_loop(pr, pw)
             sys.exit(0)
         rpc_wrap.privsep = True
